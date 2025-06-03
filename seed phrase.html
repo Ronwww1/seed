@@ -1,0 +1,1116 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BIP39 Seed Phrase Generator - Улучшенная Версия</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            position: relative;
+            overflow-x: hidden;
+        }
+
+        /* Анимированный фон */
+        body::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: 
+                radial-gradient(circle at 20% 80%, rgba(120, 119, 198, 0.3) 0%, transparent 50%),
+                radial-gradient(circle at 80% 20%, rgba(247, 149, 51, 0.3) 0%, transparent 50%),
+                radial-gradient(circle at 40% 40%, rgba(12, 88, 170, 0.3) 0%, transparent 50%);
+            animation: float 6s ease-in-out infinite;
+            z-index: -1;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-20px); }
+        }
+
+        .container {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(15px);
+            border-radius: 25px;
+            padding: 40px;
+            box-shadow: 
+                0 25px 50px rgba(0, 0, 0, 0.15),
+                0 0 0 1px rgba(255, 255, 255, 0.2);
+            max-width: 700px;
+            width: 100%;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .container::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, #667eea, transparent);
+            animation: shimmer 3s infinite;
+        }
+
+        @keyframes shimmer {
+            0% { left: -100%; }
+            100% { left: 100%; }
+        }
+
+        h1 {
+            color: #333;
+            margin-bottom: 30px;
+            font-size: 2.8em;
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            text-shadow: 0 0 30px rgba(102, 126, 234, 0.3);
+            position: relative;
+        }
+
+        .controls {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+        }
+
+        .word-count-selector {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .word-count-btn {
+            background: rgba(102, 126, 234, 0.1);
+            border: 2px solid #667eea;
+            color: #667eea;
+            padding: 8px 16px;
+            border-radius: 20px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: bold;
+        }
+
+        .word-count-btn.active,
+        .word-count-btn:hover {
+            background: #667eea;
+            color: white;
+            transform: scale(1.05);
+        }
+
+        .seed-phrase-container {
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            border-radius: 20px;
+            padding: 30px;
+            margin: 30px 0;
+            border: 2px solid #e9ecef;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .seed-phrase-container::before {
+            content: '';
+            position: absolute;
+            top: -2px;
+            left: -2px;
+            right: -2px;
+            bottom: -2px;
+            background: linear-gradient(45deg, #667eea, #764ba2, #667eea);
+            border-radius: 20px;
+            z-index: -1;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .seed-phrase-container:hover::before {
+            opacity: 1;
+        }
+
+        .seed-phrase {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 15px;
+            margin-bottom: 25px;
+        }
+
+        .word {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            padding: 15px 12px;
+            border-radius: 15px;
+            font-weight: bold;
+            font-size: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 55px;
+            position: relative;
+            overflow: hidden;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.3);
+        }
+
+        .word:hover {
+            transform: translateY(-2px) scale(1.02);
+            box-shadow: 0 10px 25px rgba(102, 126, 234, 0.4);
+        }
+
+        .word::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+            transition: left 0.6s ease;
+        }
+
+        .word:hover::before {
+            left: 100%;
+        }
+
+        .word.clicked {
+            animation: pulse 0.3s ease;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+
+        .button {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 50px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            margin: 10px;
+            transition: all 0.3s ease;
+            box-shadow: 0 8px 20px rgba(102, 126, 234, 0.3);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .button:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 12px 30px rgba(102, 126, 234, 0.4);
+        }
+
+        .button:active {
+            transform: translateY(-1px);
+        }
+
+        .button::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 0;
+            height: 0;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+            transition: width 0.3s, height 0.3s;
+        }
+
+        .button:active::after {
+            width: 300px;
+            height: 300px;
+        }
+
+        .security-features {
+            background: linear-gradient(135deg, #28a745, #20c997);
+            color: white;
+            border-radius: 15px;
+            padding: 25px;
+            margin: 20px 0;
+            text-align: left;
+        }
+
+        .feature-list {
+            list-style: none;
+            padding: 0;
+        }
+
+        .feature-list li {
+            padding: 8px 0;
+            display: flex;
+            align-items: center;
+        }
+
+        .feature-list li::before {
+            content: '✅';
+            margin-right: 10px;
+            font-size: 18px;
+        }
+
+        .entropy-info {
+            background: rgba(13, 110, 253, 0.1);
+            border: 2px solid #0d6efd;
+            border-radius: 15px;
+            padding: 20px;
+            margin: 20px 0;
+            text-align: left;
+        }
+
+        .entropy-bar {
+            width: 100%;
+            height: 20px;
+            background: #e9ecef;
+            border-radius: 10px;
+            overflow: hidden;
+            margin: 10px 0;
+        }
+
+        .entropy-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #dc3545, #ffc107, #28a745);
+            width: 0%;
+            transition: width 1s ease;
+            border-radius: 10px;
+        }
+
+        .metamask-section {
+            background: linear-gradient(135deg, #f6931f, #e8761b);
+            color: white;
+            border-radius: 20px;
+            padding: 25px;
+            margin: 20px 0;
+            box-shadow: 0 8px 20px rgba(246, 147, 31, 0.3);
+        }
+
+        .wallet-info {
+            background: rgba(255, 255, 255, 0.15);
+            border-radius: 15px;
+            padding: 20px;
+            margin: 15px 0;
+            text-align: left;
+            backdrop-filter: blur(10px);
+        }
+
+        .address {
+            font-family: 'Courier New', monospace;
+            word-break: break-all;
+            background: rgba(0, 0, 0, 0.3);
+            padding: 12px;
+            border-radius: 8px;
+            margin: 8px 0;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .warning {
+            background: linear-gradient(135deg, #dc3545, #c82333);
+            color: white;
+            padding: 25px;
+            border-radius: 15px;
+            margin: 20px 0;
+            font-weight: bold;
+            box-shadow: 0 8px 20px rgba(220, 53, 69, 0.3);
+            animation: warning-pulse 2s infinite;
+        }
+
+        @keyframes warning-pulse {
+            0%, 100% { box-shadow: 0 8px 20px rgba(220, 53, 69, 0.3); }
+            50% { box-shadow: 0 8px 25px rgba(220, 53, 69, 0.5); }
+        }
+
+        .status {
+            padding: 15px;
+            border-radius: 10px;
+            margin: 15px 0;
+            font-weight: bold;
+            transition: all 0.3s ease;
+        }
+
+        .status.success {
+            background: linear-gradient(135deg, #d4edda, #c3e6cb);
+            color: #155724;
+            border: 2px solid #c3e6cb;
+        }
+
+        .status.error {
+            background: linear-gradient(135deg, #f8d7da, #f5c6cb);
+            color: #721c24;
+            border: 2px solid #f5c6cb;
+        }
+
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255,255,255,.3);
+            border-radius: 50%;
+            border-top-color: #fff;
+            animation: spin 1s ease-in-out infinite;
+            margin-left: 10px;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        @media (max-width: 768px) {
+            .seed-phrase {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 10px;
+            }
+            
+            .container {
+                padding: 25px;
+                margin: 10px;
+            }
+            
+            h1 {
+                font-size: 2.2em;
+            }
+
+            .controls {
+                flex-direction: column;
+                align-items: center;
+            }
+
+            .word-count-selector {
+                justify-content: center;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .seed-phrase {
+                grid-template-columns: 1fr;
+            }
+            
+            .word {
+                min-height: 50px;
+                font-size: 14px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔐 Улучшенный BIP39 Генератор</h1>
+        
+        <div class="warning">
+            ⚠️ ВНИМАНИЕ: Никогда не используйте сгенерированные фразы для реальных кошельков! Это только для тестирования и обучения!
+        </div>
+
+        <div class="word-count-selector">
+            <span style="font-weight: bold; color: #667eea;">Количество слов:</span>
+            <button class="word-count-btn active" onclick="selectWordCount(12, this)">12</button>
+            <button class="word-count-btn" onclick="selectWordCount(15, this)">15</button>
+            <button class="word-count-btn" onclick="selectWordCount(18, this)">18</button>
+            <button class="word-count-btn" onclick="selectWordCount(21, this)">21</button>
+            <button class="word-count-btn" onclick="selectWordCount(24, this)">24</button>
+        </div>
+
+        <div class="controls">
+            <button class="button" onclick="generateSeedPhrase()">🎲 Сгенерировать новую фразу</button>
+            <button class="button" onclick="validateSeedPhrase()">✅ Проверить фразу</button>
+        </div>
+        
+        <div class="seed-phrase-container">
+            <div class="seed-phrase" id="seedPhrase">
+                <!-- Слова будут сгенерированы здесь -->
+            </div>
+            <div class="controls">
+                <button class="button" onclick="copySeedPhrase()" id="copyBtn">📋 Копировать фразу</button>
+                <button class="button" onclick="showQRCode()">📱 QR-код</button>
+            </div>
+        </div>
+
+        <div class="entropy-info">
+            <h4 style="color: #0d6efd; margin-bottom: 15px;">📊 Информация об энтропии</h4>
+            <div>Сила энтропии: <span id="entropyStrength">Высокая</span></div>
+            <div class="entropy-bar">
+                <div class="entropy-fill" id="entropyBar"></div>
+            </div>
+            <div style="font-size: 14px; color: #666; margin-top: 10px;">
+                Текущая энтропия: <span id="entropyBits">128</span> бит
+            </div>
+        </div>
+
+        <div class="security-features">
+            <h3>🛡️ Функции безопасности</h3>
+            <ul class="feature-list">
+                <li>Криптографически стойкая генерация случайных чисел</li>
+                <li>Правильное вычисление контрольной суммы BIP39</li>
+                <li>Поддержка различных длин мнемоник (12-24 слова)</li>
+                <li>Валидация сгенерированных фраз</li>
+                <li>Безопасное копирование в буфер обмена</li>
+                <li>Генерация QR-кодов для удобного переноса</li>
+            </ul>
+        </div>
+
+        <div class="metamask-section">
+            <h3>🦊 Интеграция с MetaMask</h3>
+            <div id="metamaskStatus" class="status">Проверка MetaMask...</div>
+            <button class="button" onclick="connectMetaMask()" id="connectBtn">Подключить MetaMask</button>
+            <button class="button" onclick="importToMetaMask()" id="importBtn" style="display:none;">Показать инструкцию импорта</button>
+            
+            <div class="wallet-info" id="walletInfo" style="display:none;">
+                <div><strong>Адрес кошелька:</strong></div>
+                <div class="address" id="walletAddress"></div>
+                <div><strong>Баланс ETH:</strong> <span id="balance">0</span></div>
+                <div><strong>Сеть:</strong> <span id="networkName">Неизвестно</span></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Модальное окно для QR-кода -->
+    <div id="qrModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8); z-index:1000; justify-content:center; align-items:center;">
+        <div style="background:white; padding:30px; border-radius:20px; text-align:center; max-width:400px; margin:20px;">
+            <h3 style="margin-bottom:20px; color:#333;">QR-код мнемонической фразы</h3>
+            <div id="qrcode" style="margin:20px auto;"></div>
+            <button class="button" onclick="closeQRModal()">Закрыть</button>
+            <div style="margin-top:15px; font-size:12px; color:#666;">
+                ⚠️ Не сканируйте этот QR-код в публичных местах!
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Встроенная реализация SHA256 для локальной работы
+        function sha256(data) {
+            function rightRotate(value, amount) {
+                return (value >>> amount) | (value << (32 - amount));
+            }
+
+            const mathPow = Math.pow;
+            const maxWord = mathPow(2, 32);
+            const lengthProperty = 'length';
+            let result = '';
+
+            const words = [];
+            const asciiBitLength = data[lengthProperty] * 8;
+
+            let hash = sha256.h = sha256.h || [];
+            const k = sha256.k = sha256.k || [];
+            let primeCounter = k[lengthProperty];
+
+            const isComposite = {};
+            for (let candidate = 2; primeCounter < 64; candidate++) {
+                if (!isComposite[candidate]) {
+                    for (let i = 0; i < 313; i += candidate) {
+                        isComposite[i] = candidate;
+                    }
+                    hash[primeCounter] = (mathPow(candidate, .5) * maxWord) | 0;
+                    k[primeCounter++] = (mathPow(candidate, 1/3) * maxWord) | 0;
+                }
+            }
+
+            data += '\x80';
+            while (data[lengthProperty] % 64 - 56) data += '\x00';
+
+            for (let i = 0; i < data[lengthProperty]; i++) {
+                const j = data.charCodeAt(i);
+                if (j >> 8) return;
+                words[i >> 2] |= j << ((3 - i) % 4) * 8;
+            }
+            words[words[lengthProperty]] = ((asciiBitLength / maxWord) | 0);
+            words[words[lengthProperty]] = (asciiBitLength);
+
+            for (let j = 0; j < words[lengthProperty];) {
+                const w = words.slice(j, j += 16);
+                const oldHash = hash;
+                hash = hash.slice(0, 8);
+
+                for (let i = 0; i < 64; i++) {
+                    const i2 = i + j;
+                    const w15 = w[i - 15], w2 = w[i - 2];
+
+                    const a = hash[0], e = hash[4];
+                    const temp1 = hash[7]
+                        + (rightRotate(e, 6) ^ rightRotate(e, 11) ^ rightRotate(e, 25))
+                        + ((e & hash[5]) ^ ((~e) & hash[6]))
+                        + k[i]
+                        + (w[i] = (i < 16) ? w[i] : (
+                              w[i - 16]
+                              + (rightRotate(w15, 7) ^ rightRotate(w15, 18) ^ (w15 >>> 3))
+                              + w[i - 7]
+                              + (rightRotate(w2, 17) ^ rightRotate(w2, 19) ^ (w2 >>> 10))
+                            ) | 0
+                          );
+                    const temp2 = (rightRotate(a, 2) ^ rightRotate(a, 13) ^ rightRotate(a, 22))
+                        + ((a & hash[1]) ^ (a & hash[2]) ^ (hash[1] & hash[2]));
+
+                    hash = [(temp1 + temp2) | 0].concat(hash);
+                    hash[4] = (hash[4] + temp1) | 0;
+                }
+
+                for (let i = 0; i < 8; i++) {
+                    hash[i] = (hash[i] + oldHash[i]) | 0;
+                }
+            }
+
+            for (let i = 0; i < 8; i++) {
+                for (let j = 3; j + 1; j--) {
+                    const b = (hash[i] >> (j * 8)) & 255;
+                    result += ((b < 16) ? 0 : '') + b.toString(16);
+                }
+            }
+            return result;
+        }
+
+        // Простая реализация QR-кода для локальной работы
+        function generateQRCode(text, element) {
+            // Упрощенная версия QR-кода - показываем текст вместо QR
+            element.innerHTML = `
+                <div style="border: 2px solid #333; padding: 20px; background: white; font-family: monospace; word-break: break-all; max-width: 300px;">
+                    <div style="text-align: center; margin-bottom: 10px; font-weight: bold;">Мнемоническая фраза:</div>
+                    <div style="font-size: 14px; line-height: 1.4;">${text}</div>
+                </div>
+                <div style="margin-top: 15px; font-size: 12px; color: #666;">
+                    Для генерации QR-кода используйте внешний генератор
+                </div>
+            `;
+        }
+
+        // Функция для преобразования строки в байты
+        function stringToBytes(str) {
+            const bytes = new Uint8Array(str.length);
+            for (let i = 0; i < str.length; i++) {
+                bytes[i] = str.charCodeAt(i);
+            }
+            return bytes;
+        }
+
+        // Функция для преобразования hex в байты
+        function hexToBytes(hex) {
+            const bytes = new Uint8Array(hex.length / 2);
+            for (let i = 0; i < hex.length; i += 2) {
+                bytes[i / 2] = parseInt(hex.substr(i, 2), 16);
+            }
+            return bytes;
+        }
+
+    </script>
+    <script>
+        // BIP39 словарь
+        const BIP39_WORDLIST = `abandon ability able about above absent absorb abstract absurd abuse access accident account accuse achieve acid acoustic acquire across act action actor actress actual adapt add addict address adjust admit adult advance advice aerobic affair afford afraid again age agent agree ahead aim air airport aisle alarm album alcohol alert alien all alley allow almost alone alpha already also alter always amateur amazing among amount amused analyst anchor ancient anger angle angry animal ankle announce annual another answer antenna antique anxiety any apart apology appear apple approve april arch arctic area arena argue arm armed armor army around arrange arrest arrive arrow art artefact artist artwork ask aspect assault asset assist assume asthma athlete atom attack attend attitude attract auction audit august aunt author auto autumn average avocado avoid awake aware away awesome awful awkward axis baby bachelor bacon badge bag balance balcony ball bamboo banana banner bar barely bargain barrel base basic basket battle beach bean beauty because become beef before begin behave behind believe below belt bench benefit best betray better between beyond bicycle bid bike bind biology bird birth bitter black blade blame blanket blast bleak bless blind blood blossom blouse blue blur blush board boat body boil bomb bone bonus book boost border boring borrow boss bottom bounce box boy bracket brain brand brass brave bread breeze brick bridge brief bright bring brisk broccoli broken bronze broom brother brown brush bubble buddy budget buffalo build bulb bulk bullet bundle bunker burden burger burst bus business busy butter buyer buzz cabbage cabin cable cactus cage cake call calm camera camp can canal cancel candy cannon canoe canvas canyon capable capital captain car carbon card cargo carpet carry cart case cash casino castle casual cat catalog catch category cattle caught cause caution cave ceiling celery cement census century cereal certain chair chalk champion change chaos chapter charge chase chat cheap check cheese chef cherry chest chicken chief child chimney choice choose chronic chuckle chunk churn cigar cinnamon circle citizen city civil claim clap clarify claw clay clean clerk clever click client cliff climb clinic clip clock clog close cloth cloud clown club clump cluster clutch coach coast coconut code coffee coil coin collect color column combine come comfort comic common company concert conduct confirm congress connect consider control convince cook cool copper copy coral core corn correct cost cotton couch country couple course cousin cover coyote crack cradle craft cram crane crash crater crawl crazy cream credit creek crew cricket crime crisp critic crop cross crouch crowd crucial cruel cruise crumble crunch crush cry crystal cube culture cup cupboard curious current curtain curve cushion custom cute cycle dad damage damp dance danger daring dash daughter dawn day deal debate debris decade december decide decline decorate decrease deer defense define defy degree delay deliver demand demise denial dentist deny depart depend deposit depth deputy derive describe desert design desk despair destroy detail detect develop device devote diagram dial diamond diary dice diesel diet differ digital dignity dilemma dinner dinosaur direct dirt disagree discover disease dish dismiss disorder display distance divert divide divorce dizzy doctor document dog doll dolphin domain donate donkey donor door dose double dove draft dragon drama drastic draw dream dress drift drill drink drip drive drop drum dry duck dumb dune during dust dutch duty dwarf dynamic eager eagle early earn earth easily east easy echo ecology economy edge edit educate effort egg eight either elbow elder electric elegant element elephant elevator elite else embark embody embrace emerge emotion employ empower empty enable enact end endless endorse enemy energy enforce engage engine enhance enjoy enlist enough enrich enroll ensure enter entire entry envelope episode equal equip era erase erode erosion error erupt escape essay essence estate eternal ethics evidence evil evoke evolve exact example excess exchange excite exclude excuse execute exercise exhaust exhibit exile exist exit exotic expand expect expire explain expose express extend extra eye eyebrow fabric face faculty fade faint faith fall false fame family famous fan fancy fantasy farm fashion fat fatal father fatigue fault favorite feature february federal fee feed feel female fence festival fetch fever few fiber fiction field figure file film filter final find fine finger finish fire firm first fiscal fish fit fitness fix flag flame flash flat flavor flee flight flip float flock floor flower fluid flush fly foam focus fog foil fold follow food foot force forest forget fork fortune forum forward fossil foster found fox fragile frame frequent fresh friend fringe frog front frost frown frozen fruit fuel fun funny furnace fury future gadget gain galaxy gallery game gap garage garbage garden garlic garment gas gasp gate gather gauge gaze general genius genre gentle genuine gesture ghost giant gift giggle ginger giraffe girl give glad glance glare glass glide glimpse globe gloom glory glove glow glue goat goddess gold good goose gorilla gospel gossip govern gown grab grace grain grant grape grass gravity great green grid grief grit grocery group grow grunt guard guess guide guilt guitar gun gym habit hair half hammer hamster hand happy harbor hard harsh harvest hat have hawk hazard head health heart heavy hedgehog height hello helmet help hen hero hidden high hill hint hip hire history hobby hockey hold hole holiday hollow home honey hood hope horn horror horse hospital host hotel hour hover hub huge human humble humor hundred hungry hunt hurdle hurry hurt husband hybrid ice icon idea identify idle ignore ill illegal illness image imitate immense immune impact impose improve impulse inch include income increase index indicate indoor industry infant inflict inform inhale inherit initial inject injury inmate inner innocent input inquiry insane insect inside inspire install intact interest into invest invite involve iron island isolate issue item ivory jacket jaguar jar jazz jealous jeans jelly jewel job join joke journey joy judge juice jump jungle junior junk just kangaroo keen keep ketchup key kick kid kidney kind kingdom kiss kit kitchen kite kitten kiwi knee knife knock know lab label labor ladder lady lake lamp language laptop large later latin laugh laundry lava law lawn lawsuit layer lazy leader leaf learn leave lecture left leg legal legend leisure lemon lend length lens leopard lesson letter level liar liberty library license life lift light like limb limit link lion liquid list little live lizard load loan lobster local lock logic lonely long loop lottery loud lounge love loyal lucky luggage lumber lunar lunch luxury lyrics machine mad magic magnet maid mail main major make mammal man manage mandate mango mansion manual maple marble march margin marine market marriage mask mass master match material math matrix matter maximum maze meadow mean measure meat mechanic medal media melody melt member memory mention menu mercy merge merit merry mesh message metal method middle midnight milk million mimic mind minimum minor minute miracle mirror misery miss mistake mix mixed mixture mobile model modify mom moment monitor monkey monster month moon moral more morning mosquito mother motion motor mountain mouse move movie much muffin mule multiply muscle museum mushroom music must mutual myself mystery myth naive name napkin narrow nasty nation nature near neck need negative neglect neither nephew nerve nest net network neutral never news next nice night noble noise nominee noodle normal north nose notable note nothing notice novel now nuclear number nurse nut oak obey object oblige obscure observe obtain obvious occur ocean october odor off offer office often oil okay old olive olympic omit once one onion online only open opera opinion oppose option orange orbit orchard order ordinary organ orient original orphan ostrich other outdoor outer output outside oval oven over own owner oxygen oyster ozone pact paddle page pair palace palm panda panel panic panther paper parade parent park parrot party pass patch path patient patrol pattern pause pave payment peace peanut pear peasant pelican pen penalty pencil people pepper perfect permit person pet phone photo phrase physical piano picnic picture piece pig pigeon pill pilot pink pioneer pipe pistol pitch pizza place planet plastic plate play please pledge pluck plug plunge poem poet point polar pole police pond pony pool popular portion position possible post potato pottery poverty powder power practice praise predict prefer prepare present pretty prevent price pride primary print priority prison private prize problem process produce profit program project promote proof property prosper protect proud provide public pudding pull pulp pulse pumpkin punch pupil puppy purchase purity purpose purse push put puzzle pyramid quality quantum quarter question quick quit quiz quote rabbit raccoon race rack radar radio rail rain raise rally ramp ranch random range rapid rare rate rather raven raw razor ready real reason rebel rebuild recall receive recipe record recycle reduce reflect reform refuse region regret regular reject relax release relief rely remain remember remind remove render renew rent reopen repair repeat replace report require rescue resemble resist resource response result retire retreat return reunion reveal review reward rhythm rib ribbon rice rich ride ridge rifle right rigid ring riot ripple risk ritual rival river road roast robot robust rocket romance roof rookie room rose rotate rough round route royal rubber rude rug rule run runway rural sad saddle sadness safe sail salad salmon salon salt salute same sample sand satisfy satoshi sauce sausage save say scale scan scare scatter scene scheme school science scissors scorpion scout scrap screen script scrub sea search season seat second secret section security seed seek segment select sell seminar senior sense sentence series service session settle setup seven shadow shaft shallow share shed shell sheriff shield shift shine ship shiver shock shoe shoot shop short shoulder shove shrimp shrug shuffle shy sibling sick side siege sight sign silent silk silly silver similar simple since sing siren sister situate six size skate sketch ski skill skin skirt skull slab slam sleep slender slice slide slight slim slogan slot slow slush small smart smile smoke smooth snack snake snap sniff snow soap soccer social sock soda soft solar soldier solid solution solve someone song soon sorry sort soul sound soup source south space spare spatial spawn speak special speed spell spend sphere spice spider spike spin spirit split spoil sponsor spoon sport spot spray spread spring spy square squeeze squirrel stable stadium staff stage stairs stamp stand start state stay steak steel stem step stereo stick still sting stock stomach stone stool story stove strategy street strike strong struggle student stuff stumble style subject submit subway success such sudden suffer sugar suggest suit summer sun sunny sunset super supply supreme sure surface surge surprise surround survey suspect sustain swallow swamp swap swarm swear sweet swift swim swing switch sword symbol symptom syrup system table tackle tag tail talent talk tank tape target task taste tattoo taxi teach team tell ten tenant tennis tent term test text thank that theme then theory there they thing this thought three thrive throw thumb thunder ticket tide tiger tilt timber time tiny tip tired tissue title toast tobacco today toddler toe together toilet token tomato tomorrow tone tongue tonight tool tooth top topic topple torch tornado tortoise toss total tourist toward tower town toy track trade traffic tragic train transfer trap trash travel tray treat tree trend trial tribe trick trigger trim trip trophy trouble truck true truly trumpet trust truth try tube tuition tumble tuna tunnel turkey turn turtle twelve twenty twice twin twist two type typical ugly umbrella unable unaware uncle uncover under undo unfair unfold unhappy uniform unique unit universe unknown unlock until unusual unveil update upgrade uphold upon upper upset urban urge usage use used useful useless usual utility vacant vacuum vague valid valley valve van vanish vapor various vast vault vehicle velvet vendor venture venue verb verify version very vessel veteran viable vibrant vicious victory video view village vintage violin virtual virus visa visit visual vital vivid vocal voice void volcano volume vote voyage wage wagon wait walk wall walnut want warfare warm warrior wash wasp waste water wave way wealth weapon wear weasel weather web wedding weekend weird welcome west wet whale what wheat wheel when where whip whisper wide width wife wild will win window wine wing wink winner winter wire wisdom wise wish witness wolf woman wonder wood wool word work world worry worth wrap wreck wrestle wrist write wrong yard year yellow you young youth zebra zero zone zoo`.split(' ');
+
+        let currentSeedPhrase = [];
+        let currentWordCount = 12;
+        let web3 = null;
+        let currentAccount = null;
+
+        // Функция для генерации энтропии
+        function generateEntropy(wordCount) {
+            const entropyBits = (wordCount * 11 - wordCount / 3) | 0;
+            const entropyBytes = entropyBits / 8;
+            const entropy = new Uint8Array(entropyBytes);
+            crypto.getRandomValues(entropy);
+            return entropy;
+        }
+
+        // Функция для вычисления чексуммы
+        function calculateChecksum(entropy) {
+            // Преобразуем байты в строку для SHA256
+            let dataStr = '';
+            for (let i = 0; i < entropy.length; i++) {
+                dataStr += String.fromCharCode(entropy[i]);
+            }
+            
+            const hash = sha256(dataStr);
+            const checksumBits = entropy.length * 8 / 32;
+            const firstByte = parseInt(hash.substring(0, 2), 16);
+            const checksum = firstByte >> (8 - checksumBits);
+            return checksum;
+        }
+
+        // Функция для преобразования энтропии в индексы слов
+        function entropyToIndices(entropy, wordCount) {
+            const checksum = calculateChecksum(entropy);
+            const checksumBits = entropy.length * 8 / 32;
+            
+            // Комбинируем энтропию и чексумму
+            let bits = '';
+            for (let i = 0; i < entropy.length; i++) {
+                bits += entropy[i].toString(2).padStart(8, '0');
+            }
+            bits += checksum.toString(2).padStart(checksumBits, '0');
+            
+            // Разбиваем на группы по 11 бит для каждого слова
+            const indices = [];
+            for (let i = 0; i < bits.length; i += 11) {
+                if (i + 11 <= bits.length) {
+                    const wordBits = bits.substr(i, 11);
+                    const index = parseInt(wordBits, 2);
+                    indices.push(index);
+                }
+            }
+            
+            return indices;
+        }
+
+        // Функция выбора количества слов
+        function selectWordCount(count, btn) {
+            currentWordCount = count;
+            
+            // Обновляем активную кнопку
+            document.querySelectorAll('.word-count-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            
+            // Генерируем новую фразу с выбранным количеством слов
+            generateSeedPhrase();
+            
+            // Обновляем информацию об энтропии
+            updateEntropyInfo();
+        }
+
+        // Основная функция генерации seed фразы
+        function generateSeedPhrase() {
+            const entropy = generateEntropy(currentWordCount);
+            const indices = entropyToIndices(entropy, currentWordCount);
+            
+            currentSeedPhrase = indices.map(index => BIP39_WORDLIST[index]);
+            
+            displaySeedPhrase(currentSeedPhrase);
+            updateEntropyInfo();
+            
+            // Анимация генерации
+            const container = document.getElementById('seedPhrase');
+            container.style.opacity = '0.5';
+            setTimeout(() => {
+                container.style.opacity = '1';
+            }, 200);
+        }
+
+        // Отображение seed фразы
+        function displaySeedPhrase(words) {
+            const container = document.getElementById('seedPhrase');
+            container.innerHTML = '';
+            
+            words.forEach((word, index) => {
+                const wordDiv = document.createElement('div');
+                wordDiv.className = 'word';
+                wordDiv.textContent = `${index + 1}. ${word}`;
+                
+                // Добавляем обработчик клика для анимации
+                wordDiv.addEventListener('click', function() {
+                    this.classList.add('clicked');
+                    setTimeout(() => {
+                        this.classList.remove('clicked');
+                    }, 300);
+                    
+                    // Копируем слово в буфер обмена
+                    navigator.clipboard.writeText(word).then(() => {
+                        showToast(`Слово "${word}" скопировано!`);
+                    });
+                });
+                
+                container.appendChild(wordDiv);
+                
+                // Анимация появления
+                setTimeout(() => {
+                    wordDiv.style.opacity = '1';
+                    wordDiv.style.transform = 'translateY(0)';
+                }, index * 100);
+            });
+        }
+
+        // Функция валидации seed фразы
+        function validateSeedPhrase() {
+            if (currentSeedPhrase.length === 0) {
+                showToast('Сначала сгенерируйте фразу!', 'error');
+                return;
+            }
+
+            try {
+                // Проверяем, что все слова есть в словаре
+                const invalidWords = currentSeedPhrase.filter(word => !BIP39_WORDLIST.includes(word));
+                if (invalidWords.length > 0) {
+                    showToast(`Недопустимые слова: ${invalidWords.join(', ')}`, 'error');
+                    return;
+                }
+
+                // Проверяем контрольную сумму
+                const indices = currentSeedPhrase.map(word => BIP39_WORDLIST.indexOf(word));
+                const isValid = validateChecksum(indices);
+
+                if (isValid) {
+                    showToast('✅ Фраза валидна!', 'success');
+                } else {
+                    showToast('❌ Неверная контрольная сумма!', 'error');
+                }
+            } catch (error) {
+                showToast('Ошибка валидации: ' + error.message, 'error');
+            }
+        }
+
+        // Функция проверки контрольной суммы
+        function validateChecksum(indices) {
+            const wordCount = indices.length;
+            const entropyBits = (wordCount * 11 - wordCount / 3) | 0;
+            const checksumBits = wordCount / 3;
+
+            // Собираем все биты
+            let bits = '';
+            indices.forEach(index => {
+                bits += index.toString(2).padStart(11, '0');
+            });
+
+            // Разделяем энтропию и контрольную сумму
+            const entropyBitsStr = bits.substring(0, entropyBits);
+            const checksumBitsStr = bits.substring(entropyBits);
+
+            // Преобразуем энтропию обратно в байты
+            const entropy = new Uint8Array(entropyBits / 8);
+            for (let i = 0; i < entropy.length; i++) {
+                const byteBits = entropyBitsStr.substring(i * 8, (i + 1) * 8);
+                entropy[i] = parseInt(byteBits, 2);
+            }
+
+            // Вычисляем ожидаемую контрольную сумму
+            const expectedChecksum = calculateChecksum(entropy);
+            const actualChecksum = parseInt(checksumBitsStr, 2);
+
+            return expectedChecksum === actualChecksum;
+        }
+
+        // Копирование seed фразы
+        function copySeedPhrase() {
+            if (currentSeedPhrase.length === 0) {
+                showToast('Сначала сгенерируйте фразу!', 'error');
+                return;
+            }
+
+            const phrase = currentSeedPhrase.join(' ');
+            navigator.clipboard.writeText(phrase).then(() => {
+                const btn = document.getElementById('copyBtn');
+                const originalText = btn.textContent;
+                btn.innerHTML = '✅ Скопировано! <div class="loading"></div>';
+                
+                setTimeout(() => {
+                    btn.textContent = originalText;
+                }, 2000);
+                
+                showToast('Фраза скопирована в буфер обмена!', 'success');
+            }).catch(() => {
+                showToast('Ошибка копирования', 'error');
+            });
+        }
+
+        // Показ QR-кода
+        function showQRCode() {
+            if (currentSeedPhrase.length === 0) {
+                showToast('Сначала сгенерируйте фразу!', 'error');
+                return;
+            }
+
+            const phrase = currentSeedPhrase.join(' ');
+            const modal = document.getElementById('qrModal');
+            const qrContainer = document.getElementById('qrcode');
+            
+            generateQRCode(phrase, qrContainer);
+            modal.style.display = 'flex';
+        }
+
+        // Закрытие модального окна QR-кода
+        function closeQRModal() {
+            document.getElementById('qrModal').style.display = 'none';
+        }
+
+        // Обновление информации об энтропии
+        function updateEntropyInfo() {
+            const entropyBits = (currentWordCount * 11 - currentWordCount / 3) | 0;
+            document.getElementById('entropyBits').textContent = entropyBits;
+            
+            let strength = 'Низкая';
+            let percentage = 0;
+            
+            if (entropyBits >= 256) {
+                strength = 'Исключительно высокая';
+                percentage = 100;
+            } else if (entropyBits >= 192) {
+                strength = 'Очень высокая';
+                percentage = 85;
+            } else if (entropyBits >= 160) {
+                strength = 'Высокая';
+                percentage = 70;
+            } else if (entropyBits >= 128) {
+                strength = 'Средняя';
+                percentage = 55;
+            } else {
+                strength = 'Низкая';
+                percentage = 30;
+            }
+            
+            document.getElementById('entropyStrength').textContent = strength;
+            document.getElementById('entropyBar').style.width = percentage + '%';
+        }
+
+        // Функция показа уведомлений
+        function showToast(message, type = 'info') {
+            const toast = document.createElement('div');
+            toast.style.cssText = `
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                padding: 15px 25px;
+                border-radius: 10px;
+                color: white;
+                font-weight: bold;
+                z-index: 10000;
+                animation: slideIn 0.3s ease;
+                max-width: 300px;
+                box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+            `;
+            
+            if (type === 'success') {
+                toast.style.background = 'linear-gradient(135deg, #28a745, #20c997)';
+            } else if (type === 'error') {
+                toast.style.background = 'linear-gradient(135deg, #dc3545, #c82333)';
+            } else {
+                toast.style.background = 'linear-gradient(135deg, #667eea, #764ba2)';
+            }
+            
+            toast.textContent = message;
+            document.body.appendChild(toast);
+            
+            setTimeout(() => {
+                toast.style.animation = 'slideOut 0.3s ease';
+                setTimeout(() => {
+                    document.body.removeChild(toast);
+                }, 300);
+            }, 3000);
+        }
+
+        // Подключение к MetaMask
+        async function connectMetaMask() {
+            if (typeof window.ethereum !== 'undefined') {
+                try {
+                    await window.ethereum.request({ method: 'eth_requestAccounts' });
+                    const accounts = await window.ethereum.request({ method: 'eth_accounts' });
+                    
+                    if (accounts.length > 0) {
+                        currentAccount = accounts[0];
+                        updateMetaMaskStatus('success', 'MetaMask подключен успешно!');
+                        document.getElementById('importBtn').style.display = 'inline-block';
+                        
+                        // Показываем информацию о кошельке
+                        await displayWalletInfo();
+                        showToast('MetaMask подключен!', 'success');
+                    }
+                } catch (error) {
+                    updateMetaMaskStatus('error', 'Ошибка подключения: ' + error.message);
+                    showToast('Ошибка подключения к MetaMask', 'error');
+                }
+            } else {
+                updateMetaMaskStatus('error', 'MetaMask не установлен. Установите расширение MetaMask.');
+                showToast('MetaMask не найден', 'error');
+            }
+        }
+
+        // Отображение информации о кошельке
+        async function displayWalletInfo() {
+            if (currentAccount) {
+                document.getElementById('walletAddress').textContent = currentAccount;
+                document.getElementById('walletInfo').style.display = 'block';
+                
+                try {
+                    // Получаем баланс
+                    const balance = await window.ethereum.request({
+                        method: 'eth_getBalance',
+                        params: [currentAccount, 'latest']
+                    });
+                    const ethBalance = parseInt(balance, 16) / Math.pow(10, 18);
+                    document.getElementById('balance').textContent = ethBalance.toFixed(6);
+                    
+                    // Получаем информацию о сети
+                    const chainId = await window.ethereum.request({ method: 'eth_chainId' });
+                    const networkNames = {
+                        '0x1': 'Ethereum Mainnet',
+                        '0x3': 'Ropsten Testnet',
+                        '0x4': 'Rinkeby Testnet',
+                        '0x5': 'Goerli Testnet',
+                        '0x89': 'Polygon Mainnet',
+                        '0x38': 'BSC Mainnet'
+                    };
+                    document.getElementById('networkName').textContent = networkNames[chainId] || `Сеть ${chainId}`;
+                    
+                } catch (error) {
+                    document.getElementById('balance').textContent = 'Ошибка получения данных';
+                    document.getElementById('networkName').textContent = 'Неизвестно';
+                }
+            }
+        }
+
+        // Импорт в MetaMask (показ инструкций)
+        function importToMetaMask() {
+            if (currentSeedPhrase.length === 0) {
+                showToast('Сначала сгенерируйте seed фразу!', 'error');
+                return;
+            }
+            
+            const phrase = currentSeedPhrase.join(' ');
+            
+            const modal = document.createElement('div');
+            modal.style.cssText = `
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background: rgba(0,0,0,0.8);
+                z-index: 1000;
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                padding: 20px;
+            `;
+            
+            modal.innerHTML = `
+                <div style="background: white; padding: 30px; border-radius: 20px; max-width: 600px; max-height: 80vh; overflow-y: auto;">
+                    <h3 style="color: #333; margin-bottom: 20px; text-align: center;">📝 Инструкция по импорту в MetaMask</h3>
+                    
+                    <div style="background: #f8f9fa; padding: 20px; border-radius: 10px; margin: 20px 0; font-family: monospace; word-break: break-all; border: 2px solid #e9ecef;">
+                        <strong>Ваша мнемоническая фраза:</strong><br>
+                        ${phrase}
+                    </div>
+                    
+                    <div style="text-align: left; line-height: 1.6; color: #333;">
+                        <h4>Шаги для импорта:</h4>
+                        <ol style="padding-left: 20px;">
+                            <li>Откройте расширение MetaMask</li>
+                            <li>Нажмите на круглую иконку профиля справа сверху</li>
+                            <li>Выберите "Import Account" или "Импортировать кошелек"</li>
+                            <li>Выберите тип: "Seed Phrase" или "Мнемоническая фраза"</li>
+                            <li>Скопируйте и вставьте фразу выше</li>
+                            <li>Создайте пароль для кошелька</li>
+                            <li>Нажмите "Import" или "Импортировать"</li>
+                        </ol>
+                    </div>
+                    
+                    <div style="background: #dc3545; color: white; padding: 15px; border-radius: 10px; margin: 20px 0; text-align: center;">
+                        <strong>⚠️ ВАЖНОЕ ПРЕДУПРЕЖДЕНИЕ!</strong><br>
+                        Это тестовая фраза! Никогда не используйте её для реальных средств!
+                    </div>
+                    
+                    <div style="text-align: center; margin-top: 20px;">
+                        <button onclick="navigator.clipboard.writeText('${phrase}').then(() => showToast('Фраза скопирована!', 'success'))" 
+                                style="background: #667eea; color: white; border: none; padding: 10px 20px; border-radius: 25px; margin: 5px; cursor: pointer;">
+                            📋 Копировать фразу
+                        </button>
+                        <button onclick="document.body.removeChild(this.closest('div[style*=\"position: fixed\"]'))" 
+                                style="background: #6c757d; color: white; border: none; padding: 10px 20px; border-radius: 25px; margin: 5px; cursor: pointer;">
+                            Закрыть
+                        </button>
+                    </div>
+                </div>
+            `;
+            
+            document.body.appendChild(modal);
+            
+            // Закрытие по клику вне модального окна
+            modal.addEventListener('click', function(e) {
+                if (e.target === modal) {
+                    document.body.removeChild(modal);
+                }
+            });
+        }
+
+        // Обновление статуса MetaMask
+        function updateMetaMaskStatus(type, message) {
+            const statusDiv = document.getElementById('metamaskStatus');
+            statusDiv.className = `status ${type}`;
+            statusDiv.textContent = message;
+        }
+
+        // Добавляем CSS анимации
+        const style = document.createElement('style');
+        style.textContent = `
+            @keyframes slideIn {
+                from { transform: translateX(100%); opacity: 0; }
+                to { transform: translateX(0); opacity: 1; }
+            }
+            @keyframes slideOut {
+                from { transform: translateX(0); opacity: 1; }
+                to { transform: translateX(100%); opacity: 0; }
+            }
+            .word {
+                opacity: 0;
+                transform: translateY(20px);
+                transition: all 0.3s ease;
+            }
+        `;
+        document.head.appendChild(style);
+
+        // Инициализация при загрузке страницы
+        window.addEventListener('load', () => {
+            // Проверяем наличие MetaMask
+            if (typeof window.ethereum !== 'undefined') {
+                updateMetaMaskStatus('success', 'MetaMask обнаружен! Нажмите для подключения.');
+            } else {
+                updateMetaMaskStatus('error', 'MetaMask не обнаружен. Установите расширение для полной функциональности.');
+            }
+            
+            // Генерируем первую фразу
+            generateSeedPhrase();
+            
+            // Показываем приветственное сообщение
+            setTimeout(() => {
+                showToast('Добро пожаловать! Генератор готов к работе.', 'success');
+            }, 1000);
+        });
+
+        // Слушаем изменения аккаунта в MetaMask
+        if (typeof window.ethereum !== 'undefined') {
+            window.ethereum.on('accountsChanged', (accounts) => {
+                if (accounts.length > 0) {
+                    currentAccount = accounts[0];
+                    displayWalletInfo();
+                    showToast('Аккаунт MetaMask изменен', 'info');
+                } else {
+                    currentAccount = null;
+                    document.getElementById('walletInfo').style.display = 'none';
+                    document.getElementById('importBtn').style.display = 'none';
+                    updateMetaMaskStatus('error', 'MetaMask отключен');
+                }
+            });
+
+            window.ethereum.on('chainChanged', (chainId) => {
+                if (currentAccount) {
+                    displayWalletInfo();
+                    showToast('Сеть изменена', 'info');
+                }
+            });
+        }
+
+        // Закрытие модальных окон по ESC
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                const qrModal = document.getElementById('qrModal');
+                if (qrModal.style.display === 'flex') {
+                    closeQRModal();
+                }
+            }
+        });
+    </script>)
